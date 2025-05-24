@@ -26,7 +26,7 @@ const useTypewriter = (texts: string[], speed = 100, pause = 1000) => {
           setCharIndex((prev) => prev - 1);
         } else {
           setIsDeleting(false);
-          setTextIndex((prev) =>prev*0);
+          setTextIndex((prev) => prev * 0);
         }
       }
     };
@@ -40,23 +40,21 @@ const useTypewriter = (texts: string[], speed = 100, pause = 1000) => {
 
 export default function Home() {
   const text = useTypewriter(
-    [ 'Future of Interview Prep', 'AI Powered Learning','Next-Gen Skill Building','Personalized Learning'],
+    ['Future of Interview Prep', 'AI Powered Learning', 'Next-Gen Skill Building', 'Personalized Learning'],
     100,
     1000
   );
 
   return (
-    <div className='relative h-screen w-full flex items-center justify-center font-mono px-4 bg-animated-gradient'>
-    <div className='flex items-center justify-around w-full'>
+    <div className='relative h-screen w-full flex items-center justify-center font-sans px-4 overflow-y-auto '>
+      <div className='flex-col'>
 
-      <div className='text-white'>
-      Helloo
+        <div>
+          <HeroSection />
+        </div>
+
+
+        </div>
       </div>
-      <div>
-      <HeroSection/>
-      </div>
-    </div>
-    
-    </div>
   );
 }

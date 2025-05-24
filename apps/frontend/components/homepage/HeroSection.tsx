@@ -1,5 +1,5 @@
-import React from 'react'
-import { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+
 const useTypewriter = (texts: string[], speed = 100, pause = 1000) => {
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -10,7 +10,7 @@ const useTypewriter = (texts: string[], speed = 100, pause = 1000) => {
     const currentText = texts[textIndex];
     let typingSpeed = isDeleting ? speed / 2 : speed;
 
-    const handleTyping = () => {
+    const timer = setTimeout(() => {
       if (!isDeleting) {
         if (charIndex < currentText.length) {
           setDisplayText((prev) => prev + currentText.charAt(charIndex));
@@ -24,12 +24,11 @@ const useTypewriter = (texts: string[], speed = 100, pause = 1000) => {
           setCharIndex((prev) => prev - 1);
         } else {
           setIsDeleting(false);
-          setTextIndex((prev) =>prev*0);
+          setTextIndex((prev) => (prev + 1) % texts.length);
         }
       }
-    };
+    }, typingSpeed);
 
-    const timer = setTimeout(handleTyping, typingSpeed);
     return () => clearTimeout(timer);
   }, [texts, textIndex, charIndex, isDeleting, speed, pause]);
 
@@ -38,34 +37,48 @@ const useTypewriter = (texts: string[], speed = 100, pause = 1000) => {
 
 function HeroSection() {
   const text = useTypewriter(
-    [ 'Future of Interview Prep', 'AI Powered Learning','Next-Gen Skill Building','Personalized Learning'],
+    ['Crack your interviews', 'AI Powered Learning', 'Personalized Learning'],
     100,
     1000
   );
 
   return (
-      <div className="items-center   w-3xl gap-y-4 z-10">
-        <div>
-
-        <div className="text-gray-300  text-4xl flex gap-x-4 sm:text-5xl text-glow">Welcome to <span className='text-[#00FF00]'>IntervueAI</span></div>
-        <div className="flex text-start  text-[#00FF00] text-4xl sm:text-5xl gap-x-2 text-glow">
-          {text}
-          <span className="animate-pulse font-extralight">_</span>
-        </div>
-        <p className="text-lg md:text-xl mt-5 w-full text-gray-600 dark:text-gray-400 mb-8  mx-auto">
-          Master every type of interview with realistic, on-demand practice powered by AI.
-          From behavioral questions to live coding challenges and system design scenarios,
-          IntervueAI helps you sharpen your skills, get instant feedback, and build the confidence
-          to ace your next interview.
-        </p>
-        <div className=' space-x-5 flex'>
-          <button className='cursor-pointer hover:bg-gray-400 bg-gray-300 font-bold  font-mono py-3 px-10 rounded-xl text-black text-xl'>Contact Us</button>
-          <button className='cursor-pointer bg-gray-300 hover:bg-gray-400 font-bold  font-mono py-3 px-10 rounded-xl text-black text-xl'>Learn More</button>
-        </div>
-        </div>
+    <section className="flex  flex-col md:flex-row items-center justify-between w-full max-w-7xl   px-6 py-16  md:py-24 gap-10">
+      
+      <div className="  flex justify-center">
+        <img
+          src="https://d3h0owdjgzys62.cloudfront.net/images/43844/live_screenshot/large2x/Freshdesk_actions_freshdesk.png" 
+          alt="IntervueAI Preview"
+          className="w-screen mx-10 h-3/4 max-w-sm rounded-xl md:max-w-md"
+        />
       </div>
 
+      <div className="w-full md:w-full flex flex-col items-center md:items-start text-center md:text-left">
+        <h1 className="text-gray-700 text-3xl sm:text-4xl md:text-5xl font-bold flex  gap-2 text-glow">
+    <span className="text-[#4285F4]/100 font-extrabold">IntervueAI</span>
+        </h1>
+
+        <h2 className="flex font-bold items-center mt-4 text-2xl sm:text-3xl md:text-4xl text-start text-gray-700 text-glow gap-1">
+          {text}
+          <span className="animate-pulse font-extralight">_</span>
+        </h2>
+
+        <p className="mt-6 font-light text-base sm:text-lg md:text-xl text-start text-gray-700 dark:text-gray-400 max-w-xl">
+          Master every type of interview with realistic, on-demand practice powered by AI. From behavioral questions to live coding challenges and system design scenarios, IntervueAI helps you sharpen your skills, get instant feedback, and build the confidence to ace your next interview.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 mt-8">
+          <button className="cursor-pointer bg-[#4285F4]/100 hover:bg-black  transition-colors font-bold font-mono py-3 px-8 rounded-xl text-white text-lg md:text-lg">
+            Contact Us
+          </button>
+          <button className="cursor-pointer bg-[#4285F4]/100 hover:bg-black  transition-colors font-bold font-mono py-3 px-8 rounded-xl text-white text-lg md:text-lg">
+            Learn More
+          </button>
+        </div>
+      </div>
+      
+    </section>
   );
 }
 
-export default HeroSection
+export default HeroSection;

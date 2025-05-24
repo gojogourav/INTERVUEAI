@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum SubmissionStatus {
+  PENDING
+  RUNNING
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  RUNTIME_ERROR
+  COMPILE_ERROR
+  INTERNAL_ERROR
+}
+
+enum ProgrammingLanguage {
+  JAVASCRIPT
+  PYTHON
+  JAVA
+  CPP
+  CSHARP
+  GO
+  RUST
+  TYPESCRIPT
+}
+
+enum QuestionType {
+  CODING
+  MCQ
+  SYSTEM_DESIGN
+}
+
+enum InterviewStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+  EXPIRED
+}
+
+model User {
+  id             String    @id @default(uuid())
+  name           String
+  username       String    @unique
+  hashedPassword String
+  email          String    @unique
+  avatarUrl      String?
+  bio            String?
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  createdInterviews Interview[]        @relation("InterviewCreator")
+  attempts          InterviewAttempt[]
+  submissions       Submission[]
+  profiles          UserProfile[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  company         String?
+  position        String?
+  experienceYears Int?
+  skills          String[]
+  preferredLangs  ProgrammingLanguage[]
+  githubUsername  String?
+  linkedinUrl     String?
+  resumeUrl       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId])
+  @@map("user_profiles")
+}
+
+model Interview {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  slug        String  @unique
+  isPublic    Boolean @default(false)
+
+  durationMinutes Int    @default(30)
+  passingScore    Float? @default(70.0)
+  maxAttempts     Int?   @default(3)
+
+  company       String?
+  tags          String[]
+  totalAttempts Int      @default(0)
+  totalPassed   Int      @default(0)
+  avgScore      Float?
+
+  creatorId String
+  creator   User   @relation("InterviewCreator", fields: [creatorId], references: [id])
+
+  questions InterviewQuestion[]
+  attempts  InterviewAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([creatorId])
+  @@index([company])
+  @@map("interviews")
+}
+
+model InterviewQuestion {
+  id               String    @id @default(uuid())
+  interviewId      String
+  interview        Interview @relation(fields: [interviewId], references: [id])
+  questionId       String
+  question         Question  @relation(fields: [questionId], references: [id])
+  order            Int
+  points           Float?
+  timeLimitMinutes Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([interviewId, questionId])
+  @@unique([interviewId, order])
+  @@index([questionId])
+  @@map("interview_questions")
+}
+
+model InterviewAttempt {
+  id                 String    @id @default(uuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id])
+  attemptedInterview Interview @relation(fields: [interviewId], references: [id])
+  interviewId        String
+  score              Float?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  timeTakenInMinutes Int?
+  feedback           String?
+
+  submissions Submission[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId, interviewId])
+  @@map("interview_attempts")
+}
+
+model Question {
+  id                          String                @id @default(uuid())
+  title                       String
+  questionType                QuestionType
+  difficulty                  Difficulty            @default(MEDIUM)
+  tags                        String[]
+  //only one of these bad boys will not be null
+  oaQuestionDetails           OaQuestion?           @relation(fields: [oaQuestionId], references: [id])
+  oaQuestionId                String?               @unique
+  mcqQuestionDetails          MCQQuestion?          @relation(fields: [mcqQuestionId], references: [id])
+  mcqQuestionId               String?               @unique
+  systemDesignQuestionDetails SystemDesignQuestion? @relation(fields: [systemDesignQuestionId], references: [id])
+  systemDesignQuestionId      String?               @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parentInterviews InterviewQuestion[]
+  submissions      Submission[]
+
+  @@index([questionType])
+  @@index([difficulty])
+  @@map("questions")
+}
+
+model Submission {
+  id                 String           @id @default(uuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id])
+  questionId         String
+  question           Question         @relation(fields: [questionId], references: [id])
+  interviewAttemptId String
+  interviewAttempt   InterviewAttempt @relation(fields: [interviewAttemptId], references: [id])
+  score              Float?
+  feedback           String?
+  submittedAt        DateTime         @default(now())
+}
+
+model OaQuestion {
+  id          String     @id @default(uuid())
+  description String
+  constrains  String?
+  starterCode Json?
+  testCases   TestCase[]
+  aiHints     Json? //trigger if stuck for 10 minutes 
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Question  Question?
+
+  @@map("coding_questions")
+}
+
+model TestCase {
+  id             String     @id @default(uuid())
+  oaQuestionId   String
+  oaQuestion     OaQuestion @relation(fields: [oaQuestionId], references: [id])
+  input          Json
+  expectedOutput Json
+  isSample       Boolean    @default(false)
+  weight         Float      @default(1.0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([oaQuestionId])
+  @@map("test_cases")
+}
+
+model MCQQuestion {
+  id                   String  @id @default(uuid())
+  questionText         String
+  options              Json
+  explanation          String?
+  allowMultipleAnswers Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Question  Question?
+
+  @@map("mcq_questions")
+}
+
+model SystemDesignQuestion {
+  id String @id @default(uuid())
+
+  prompt              String
+  evaluationCriteria  String?
+  initialDiagramState Json? //top pe question title and description
+  aiAnalysis          Json?
+  drawingData         Json?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  Question  Question?
+
+  @@map("system_design_questions")
+}
