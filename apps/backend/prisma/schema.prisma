@@ -43,19 +43,6 @@ enum QuestionType {
   SYSTEM_DESIGN
 }
 
-enum InterviewStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-enum AttemptStatus {
-  IN_PROGRESS
-  COMPLETED
-  ABANDONED
-  EXPIRED
-}
-
 model User {
   id             String    @id @default(uuid())
   name           String
@@ -74,6 +61,7 @@ model User {
   submissions       Submission[]
   profiles          UserProfile[]
 
+  @@index([email])
   @@map("users")
 }
 
@@ -85,7 +73,7 @@ model UserProfile {
   company         String?
   position        String?
   experienceYears Int?
-  skills          String[]
+  skills          String[]              @default([])
   preferredLangs  ProgrammingLanguage[]
   githubUsername  String?
   linkedinUrl     String?
@@ -113,17 +101,17 @@ model Interview {
   tags          String[]
   totalAttempts Int      @default(0)
   totalPassed   Int      @default(0)
-  avgScore      Float?
 
-  creatorId String
-  creator   User   @relation("InterviewCreator", fields: [creatorId], references: [id])
-
-  questions InterviewQuestion[]
-  attempts  InterviewAttempt[]
+  creatorId      String
+  creator        User                @relation("InterviewCreator", fields: [creatorId], references: [id])
+  totalQuestions Int                 @default(3)
+  questions      InterviewQuestion[]
+  attempts       InterviewAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([slug])
   @@index([creatorId])
   @@index([company])
   @@map("interviews")
@@ -137,7 +125,7 @@ model InterviewQuestion {
   question         Question  @relation(fields: [questionId], references: [id])
   order            Int
   points           Float?
-  timeLimitMinutes Int?
+  timeLimitMinutes Int       @default(15)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -175,13 +163,14 @@ model Question {
   difficulty                  Difficulty            @default(MEDIUM)
   tags                        String[]
   //only one of these bad boys will not be null
-  oaQuestionDetails           OaQuestion?           @relation(fields: [oaQuestionId], references: [id])
+  oaQuestionDetails           OaQuestion?
   oaQuestionId                String?               @unique
-  mcqQuestionDetails          MCQQuestion?          @relation(fields: [mcqQuestionId], references: [id])
+  mcqQuestionDetails          MCQQuestion?
   mcqQuestionId               String?               @unique
-  systemDesignQuestionDetails SystemDesignQuestion? @relation(fields: [systemDesignQuestionId], references: [id])
+  systemDesignQuestionDetails SystemDesignQuestion?
   systemDesignQuestionId      String?               @unique
 
+  maxScore  Int      @default(100)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -207,62 +196,52 @@ model Submission {
 }
 
 model OaQuestion {
-  id          String     @id @default(uuid())
+  id          String   @id @default(uuid())
+  points      Int      @default(40)
+  title       String
   description String
+  question    Question @relation(fields: [questionId], references: [id])
+  questionId  String   @unique
+
   constrains  String?
   starterCode Json?
-  testCases   TestCase[]
   aiHints     Json? //trigger if stuck for 10 minutes 
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Question  Question?
+  accepted    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("coding_questions")
 }
 
-model TestCase {
-  id             String     @id @default(uuid())
-  oaQuestionId   String
-  oaQuestion     OaQuestion @relation(fields: [oaQuestionId], references: [id])
-  input          Json
-  expectedOutput Json
-  isSample       Boolean    @default(false)
-  weight         Float      @default(1.0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([oaQuestionId])
-  @@map("test_cases")
-}
-
 model MCQQuestion {
   id                   String  @id @default(uuid())
+  points               Int     @default(30)
   questionText         String
   options              Json
   explanation          String?
   allowMultipleAnswers Boolean @default(false)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Question  Question?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String   @unique
 
   @@map("mcq_questions")
 }
 
 model SystemDesignQuestion {
-  id String @id @default(uuid())
-
+  id                  String  @id @default(uuid())
+  points              Int     @default(30)
   prompt              String
   evaluationCriteria  String?
   initialDiagramState Json? //top pe question title and description
   aiAnalysis          Json?
   drawingData         Json?
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  Question  Question?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String   @unique
 
   @@map("system_design_questions")
 }
